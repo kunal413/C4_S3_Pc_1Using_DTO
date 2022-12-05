@@ -1,0 +1,101 @@
+version: '3.9'
+services:
+  movie-service:
+    image: product_image
+    container_name: product-service
+    build: UserProductService/
+    restart: always
+    networks:
+      - mynetwork
+    ports:
+      - 8082:8082
+    depends_on:
+      - mongoService
+      - apigateway
+      - eureka-service
+
+  mongoService:
+    image: mongo
+    container_name: mongoService
+    ports:
+      - 27017:27017
+    networks:
+      - mynetwork
+
+  authentication-service:
+    container_name: authentication-service
+    build: UserAuthentication/
+    restart: always
+    networks:
+      - mynetwork
+    ports:
+      - 8081:8081
+    depends_on:
+      - mysqlService
+      - apigateway
+      - eureka-service
+
+  mysqlService:
+    image: mysql:latest
+    container_name: mysqlService
+    networks:
+      - mynetwork
+    ports:
+      - 3306:3306
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq-container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - mynetwork
+    restart: always
+
+  eureka:
+    client:
+  user-notification-service:
+    container_name: user-notification-service
+    build: NotificationService/
+    networks:
+      - mynetwork
+    ports:
+      - "8089:8089"
+    depends_on:
+      - mongoService
+      - eureka-server
+      - apigateway
+    restart: always
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq-container
+
+
+  apigateway:
+    container_name: apigateway
+    build: demoAPIGatWay/
+    networks:
+      - mynetwork
+    ports:
+      - 9500:9500
+    depends_on:
+      - eureka-service
+
+  eureka-service:
+    container_name: eureka-service
+    build: C15_Demo_Sprint_1/
+    restart: always
+    networks:
+      - mynetwork
+    ports:
+      - 8761:8761
+
+networks:
+  mynetwork:
+    driver: bridge
